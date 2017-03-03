@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+  <style name="AppTheme" parent="Theme.Transparent"/>
+
+  <style name="Theme.Transparent" parent="Theme.AppCompat.NoActionBar">
+    <item name="android:windowIsTranslucent">true</item>
+    <item name="android:windowBackground">@android:color/transparent</item>
+    <item name="android:windowContentOverlay">@null</item>
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:colorBackgroundCacheHint">@null</item>
+    <item name="android:windowAnimationStyle">@null</item>
+    <item name="android:backgroundDimEnabled">false</item>
+  </style>
+
+  <style name="RationaleButton">
+    <item name="android:layout_width">wrap_content</item>
+    <item name="android:layout_height">48dp</item>
+    <item name="android:gravity">center</item>
+    <item name="android:singleLine">true</item>
+    <item name="android:textAllCaps">true</item>
+    <item name="android:textSize">12sp</item>
+    <item name="android:layout_marginLeft">15dp</item>
+    <item name="android:layout_marginTop">10dp</item>
+    <item name="android:layout_marginRight">15dp</item>
+    <item name="android:layout_centerHorizontal">true</item>
+  </style>
+
+  <style name="RationaleButton.Blue" parent="RationaleButton">
+    <item name="android:background">@color/light_blue</item>
+    <item name="android:foreground">?attr/colorControlHighlight</item>
+    <item name="android:textColor">@android:color/white</item>
+  </style>
+
+  <style name="RationaleButton.White" parent="RationaleButton">
+    <item name="android:background">?attr/selectableItemBackground</item>
+    <item name="android:foreground">@android:color/white</item>
+    <item name="android:textColor">@color/light_blue</item>
+  </style>
+</resources>
