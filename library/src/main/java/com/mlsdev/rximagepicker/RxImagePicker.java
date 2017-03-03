@@ -5,25 +5,29 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
-import android.util.Log;
-
 import java.util.List;
-
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
 public class RxImagePicker {
 
-    private static RxImagePicker instance;
+    private static volatile RxImagePicker instance = null;
 
     public static synchronized RxImagePicker with(Context context) {
+        if (context == null) {
+            throw new IllegalArgumentException("context == null");
+        }
         if (instance == null) {
-            instance = new RxImagePicker(context.getApplicationContext());
+            synchronized (RxImagePicker.class) {
+                if (instance == null) {
+                    instance = new RxImagePicker(context.getApplicationContext());
+                }
+            }
         }
         return instance;
     }
 
-    private Context context;
+    private final Context context;
     private PublishSubject<Uri> publishSubject;
     private PublishSubject<List<Uri>> publishSubjectMultipleImages;
 
