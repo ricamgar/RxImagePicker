@@ -18,9 +18,19 @@ import android.view.View;
 import android.view.ViewStub;
 import android.widget.TextView;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
+import rx.Observable;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.exceptions.Exceptions;
+import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 
 public class HiddenActivity extends Activity {
 
@@ -76,14 +86,40 @@ public class HiddenActivity extends Activity {
     if (resultCode == RESULT_OK) {
       switch (requestCode) {
         case SELECT_PHOTO:
-          handleGalleryResult(data);
+          resizeAndReturn(data.getData());
           break;
         case TAKE_PHOTO:
-          RxImagePicker.with(this).onImagePicked(cameraPictureUrl);
+          resizeAndReturn(cameraPictureUrl);
           break;
       }
     }
     finish();
+  }
+
+  private void resizeAndReturn(Uri uri) {
+    Observable.just(uri)
+        .map(new Func1<Uri, Uri>() {
+          @Override public Uri call(Uri uri) {
+            try {
+              Uri output = createFileFromContentUri(uri);
+              File file = FileUtils.resizeImage(HiddenActivity.this, output);
+              return Uri.fromFile(file);
+            } catch (IOException e) {
+              throw Exceptions.propagate(e);
+            }
+          }
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(new Action1<Uri>() {
+          @Override public void call(Uri uri) {
+            RxImagePicker.with(HiddenActivity.this).onImagePicked(uri);
+          }
+        }, new Action1<Throwable>() {
+          @Override public void call(Throwable throwable) {
+            throwable.printStackTrace();
+          }
+        });
   }
 
   private void handleGalleryResult(Intent data) {
@@ -113,11 +149,16 @@ public class HiddenActivity extends Activity {
         if (!checkPermission(Manifest.permission.CAMERA)) {
           return;
         }
-        cameraPictureUrl = createImageUri();
+
+        cameraPictureUrl = Uri.fromFile(createImageFile());
         pictureChooseIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        //pictureChooseIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraPictureUrl);
         pictureChooseIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraPictureUrl);
         chooseCode = TAKE_PHOTO;
+
+        if (pictureChooseIntent.resolveActivity(getPackageManager()) == null) {
+          return;
+        }
+
         break;
       case GALLERY:
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -143,7 +184,7 @@ public class HiddenActivity extends Activity {
       return true;
     } else {
       if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
-        createAndShowPermissionRationale(permission, R.string.app_name, R.string.app_name);
+        createAndShowPermissionRationale(permission);
       } else {
         ActivityCompat.requestPermissions(this, new String[] {permission}, 0);
       }
@@ -151,7 +192,22 @@ public class HiddenActivity extends Activity {
     }
   }
 
-  protected void createAndShowPermissionRationale(final String permission, int titleResId, int subtitleResId) {
+  protected void createAndShowPermissionRationale(final String permission) {
+    int titleResId = 0;
+    int subtitleResId = 0;
+
+    switch (permission) {
+      case Manifest.permission.CAMERA:
+        titleResId = R.string.rationale_camera_title;
+        subtitleResId = R.string.rationale_camera_subtitle;
+        break;
+
+      case Manifest.permission.WRITE_EXTERNAL_STORAGE:
+        titleResId = R.string.rationale_camera_title;
+        subtitleResId = R.string.rationale_camera_subtitle;
+        break;
+    }
+
     if (rationaleView == null) {
       rationaleView = ((ViewStub) findViewById(R.id.permission_rationale_stub)).inflate();
     } else {
@@ -184,8 +240,6 @@ public class HiddenActivity extends Activity {
         break;
     }
   }
-
-
 
   public String dismissPermissionRationale() {
     if (rationaleView != null && rationaleView.getVisibility() == View.VISIBLE) {
@@ -236,12 +290,30 @@ public class HiddenActivity extends Activity {
     overridePendingTransition(0, android.R.anim.fade_out);
   }
 
-  private Uri createImageUri() {
-    // Create an image file name
-    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-    String imageFileName = "JPEG_" + timeStamp + "_";
+  private File createImageFile() {
+    String timeStamp =
+        new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+    String imageFileName = "JPEG_" + timeStamp + ".jpeg";
     File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-    File image = new File(storageDir, imageFileName);
-    return Uri.fromFile(image);
+    return new File(storageDir, imageFileName);
+  }
+
+  Uri createFileFromContentUri(Uri contentUri) {
+    try {
+      File output = createImageFile();
+      InputStream inputStream = getContentResolver().openInputStream(contentUri);
+      byte[] buffer = new byte[inputStream.available()];
+      inputStream.read(buffer);
+      File imageFile = createImageFile();
+      FileOutputStream fo = new FileOutputStream(imageFile);
+      fo.write(buffer);
+      fo.flush();
+      fo.close();
+      inputStream.close();
+      return Uri.fromFile(output);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return null;
   }
 }

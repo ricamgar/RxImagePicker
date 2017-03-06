@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">library</string>
+  <string name="app_name">library</string>
+  <string name="rationale_camera_title">Rationale Camera Title</string>
+  <string name="rationale_camera_subtitle">Rationale Camera Subtitle</string>
+  <string name="rationale_storage_title">Rationale Storage Title</string>
+  <string name="rationale_storage_subtitle">Rationale Storage Subtitle</string>
 </resources>
