@@ -8,7 +8,6 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
@@ -294,13 +293,12 @@ public class HiddenActivity extends Activity {
     String timeStamp =
         new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
     String imageFileName = "JPEG_" + timeStamp + ".jpeg";
-    File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+    File storageDir = getExternalCacheDir();
     return new File(storageDir, imageFileName);
   }
 
   Uri createFileFromContentUri(Uri contentUri) {
     try {
-      File output = createImageFile();
       InputStream inputStream = getContentResolver().openInputStream(contentUri);
       byte[] buffer = new byte[inputStream.available()];
       inputStream.read(buffer);
@@ -310,7 +308,7 @@ public class HiddenActivity extends Activity {
       fo.flush();
       fo.close();
       inputStream.close();
-      return Uri.fromFile(output);
+      return Uri.fromFile(imageFile);
     } catch (IOException e) {
       e.printStackTrace();
     }
