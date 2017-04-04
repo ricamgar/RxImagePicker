@@ -17,13 +17,8 @@ import android.view.View;
 import android.view.ViewStub;
 import android.widget.TextView;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.Locale;
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.exceptions.Exceptions;
@@ -102,8 +97,8 @@ public class HiddenActivity extends Activity {
         .map(new Func1<Uri, Uri>() {
           @Override public Uri call(Uri uri) {
             try {
-              Uri output = createFileFromContentUri(uri);
-              File file = FileUtils.resizeImage(HiddenActivity.this, output);
+              File output = FileUtils.createFileFromContentUri(HiddenActivity.this, uri);
+              File file = FileUtils.resizeImage(HiddenActivity.this, Uri.fromFile(output));
               return Uri.fromFile(file);
             } catch (IOException e) {
               throw Exceptions.propagate(e);
@@ -151,7 +146,7 @@ public class HiddenActivity extends Activity {
           return;
         }
 
-        cameraPictureUrl = Uri.fromFile(createImageFile());
+        cameraPictureUrl = Uri.fromFile(FileUtils.createImageFile(this));
         pictureChooseIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         pictureChooseIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraPictureUrl);
         chooseCode = TAKE_PHOTO;
@@ -289,31 +284,5 @@ public class HiddenActivity extends Activity {
   @Override public void finish() {
     super.finish();
     overridePendingTransition(0, android.R.anim.fade_out);
-  }
-
-  private File createImageFile() {
-    String timeStamp =
-        new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-    String imageFileName = "JPEG_" + timeStamp + ".jpeg";
-    File storageDir = getExternalCacheDir();
-    return new File(storageDir, imageFileName);
-  }
-
-  Uri createFileFromContentUri(Uri contentUri) {
-    try {
-      InputStream inputStream = getContentResolver().openInputStream(contentUri);
-      byte[] buffer = new byte[inputStream.available()];
-      inputStream.read(buffer);
-      File imageFile = createImageFile();
-      FileOutputStream fo = new FileOutputStream(imageFile);
-      fo.write(buffer);
-      fo.flush();
-      fo.close();
-      inputStream.close();
-      return Uri.fromFile(imageFile);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return null;
   }
 }

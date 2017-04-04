@@ -12,9 +12,39 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class FileUtils {
   public static final int PHOTOS_SIZE = 500;
+
+  public static File createFileFromContentUri(Context context, Uri contentUri) {
+    try {
+      InputStream inputStream = context.getContentResolver().openInputStream(contentUri);
+      byte[] buffer = new byte[inputStream.available()];
+      inputStream.read(buffer);
+      File imageFile = createImageFile(context);
+      FileOutputStream fo = new FileOutputStream(imageFile);
+      fo.write(buffer);
+      fo.flush();
+      fo.close();
+      inputStream.close();
+      return imageFile;
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+  public static File createImageFile(Context context) {
+    String timeStamp =
+        new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+    String imageFileName = "PNG_" + timeStamp + ".png";
+    File storageDir = context.getExternalCacheDir();
+    return new File(storageDir, imageFileName);
+  }
 
   public static File resizeImage(Context context, Uri imageUri) throws IOException {
     // First we get the the dimensions of the file on disk
@@ -30,7 +60,7 @@ public class FileUtils {
     resizedBitmap = checkAndRotateBitmapIfNeeded(context, imageUri, resizedBitmap);
 
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-    resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+    resizedBitmap.compress(Bitmap.CompressFormat.PNG, 100, bytes);
 
     File f = new File(imageUri.getPath());
     f.createNewFile();
